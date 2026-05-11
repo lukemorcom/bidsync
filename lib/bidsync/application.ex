@@ -15,6 +15,8 @@ defmodule Bidsync.Application do
       # Start a worker by calling: Bidsync.Worker.start_link(arg)
       # {Bidsync.Worker, arg},
       # Start to serve requests, typically the last entry
+      {Registry, keys: :unique, name: Bidsync.AuctionRegistry},
+      {DynamicSupervisor, strategy: :one_for_one, name: Bidsync.AuctionSupervisor},
       BidsyncWeb.Endpoint
     ]
 

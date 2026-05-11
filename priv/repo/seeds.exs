@@ -1,11 +1,11 @@
-# Script for populating the database. You can run it as:
-#
-#     mix run priv/repo/seeds.exs
-#
-# Inside the script, you can read and write to any of your
-# repositories directly:
-#
-#     Bidsync.Repo.insert!(%Bidsync.SomeSchema{})
-#
-# We recommend using the bang functions (`insert!`, `update!`
-# and so on) as they will fail if something goes wrong.
+alias Bidsync.Auctions
+
+auctions_data = [
+  %{title: "Antique Watch", starting_price: 500_00},
+  %{title: "Elixir In Action", starting_price: 25_00},
+  %{title: "Spaghetti Bolognese", starting_price: 149_99}
+]
+
+Enum.each(auctions_data, fn data -> Auctions.create_auction(data) end)
+
+IO.puts("Auctions seeded")
