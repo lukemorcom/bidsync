@@ -1,9 +1,8 @@
 # Bidsync
 
-A workbench of a project for me to play around with as I learn Elixir and Phoenix.
+A workbench of a project for me to play around with as I learn Elixir and Phoenix. 
 
-The code here is almost certainly not fit for production!
-
+The code here is not fit for *anything* other than learning by breaking things and slowly fitting the shapes into the holes they belong in. Committing all my mistakes to source control so I can look back at it when I'm an Elixir superhero at some future time :D
 
 ## To start the app:
 

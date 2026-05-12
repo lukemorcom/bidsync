@@ -17,7 +17,8 @@ defmodule Bidsync.Application do
       # Start to serve requests, typically the last entry
       {Registry, keys: :unique, name: Bidsync.AuctionRegistry},
       {DynamicSupervisor, strategy: :one_for_one, name: Bidsync.AuctionSupervisor},
-      BidsyncWeb.Endpoint
+      BidsyncWeb.Endpoint,
+      {Task, fn -> boot_active_auctions() end}
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
@@ -32,5 +33,16 @@ defmodule Bidsync.Application do
   def config_change(changed, _new, removed) do
     BidsyncWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp boot_active_auctions do
+    auctions = Bidsync.Auctions.list_auctions()
+  
+   Enum.each(auctions, fn auction ->
+      DynamicSupervisor.start_child(
+        Bidsync.AuctionSupervisor, 
+        {Bidsync.AuctionServer, auction.id}
+      )
+    end)
   end
 end

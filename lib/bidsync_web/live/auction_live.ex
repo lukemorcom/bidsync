@@ -2,16 +2,15 @@ defmodule BidsyncWeb.AuctionLive do
   use BidsyncWeb, :live_view
   
   alias Bidsync.AuctionServer
-  alias Bidsync.AuctionManager
   alias Bidsync.Auctions
 
   @impl true
   def mount(_params, _session, socket) do
     auctions = Auctions.list_auctions()
     
-    Enum.each(auctions, fn auction -> 
-      AuctionManager.ensure_started(auction.id)
-    end)
+    if connected?(socket) do
+      Phoenix.PubSub.subscribe(Bidsync.PubSub, "auctions:bids")
+    end
 
     bids = Map.new(auctions, fn auction ->
       {auction.id, AuctionServer.get_current_bid(auction.id)}
@@ -21,20 +20,28 @@ defmodule BidsyncWeb.AuctionLive do
   end
 
   @impl true
-  def handle_event("place_bid", %{"id" => id_string}, socket) do
+  def handle_event("place_bid", %{"auctionid" => id_string, "amount" => amount_string}, socket) do
     auction_id = String.to_integer(id_string)
-    current_bid = Map.get(socket.assigns.bids, auction_id, 0)
-    new_bid = current_bid + 10
+    amount = String.to_integer(amount_string)
 
-    case AuctionServer.place_bid(auction_id, new_bid) do
-      {:ok, updated_amount} ->
-        updated_bids = Map.put(socket.assigns.bids, auction_id, updated_amount)
-        {:noreply, assign(socket, bids: updated_bids)}
+    case AuctionServer.place_bid(auction_id, amount) do
+      {:ok, _updated_amount} ->
+        {:noreply, socket}
 
       {:error, reason} ->
         {:noreply, put_flash(socket, :error, reason)}
     end
   end
+
+  @impl true
+  def handle_info({:bid_updated, auction_id, new_amount}, socket) do
+    current_bids = socket.assigns.bids
+
+    updated_bids = Map.put(current_bids, auction_id, new_amount)
+  
+    {:noreply, assign(socket, bids: updated_bids)}
+  end
+
 
   @impl true
   def render(assigns) do
@@ -51,14 +58,20 @@ defmodule BidsyncWeb.AuctionLive do
               <span class="text-lg font-bold text-green-600">
                 Current Bid: £<%= Map.get(@bids, auction.id, 0) %>
               </span>
-              
-              <button 
-                phx-click="place_bid" 
-                phx-value-id={auction.id}
-                class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
-              >
-                Bid +£10
-              </button>
+              <form phx-submit="place_bid" class="flex items-center gap-2 mt-4">
+              <input type="hidden" name="auctionid" value={auction.id} />
+              <input 
+                type="number" 
+                name="amount" 
+                id={"bid-amount-#{auction.id}"}
+                placeholder="Enter amount..." 
+                class="border p-2 rounded w-32 text-black"
+                required 
+                />
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                  Place Bid
+                </button>
+              </form>
             </div>
           </div>
         <% end %>

@@ -29,6 +29,12 @@ defmodule Bidsync.AuctionServer do
   def handle_call({:place_bid, amount}, _from, state) do
     if amount > state.highest_bid do
       new_state = %{state | highest_bid: amount}
+      
+      Phoenix.PubSub.broadcast(
+        Bidsync.PubSub,
+        "auctions:bids",
+        {:bid_updated, state.auction_id, amount}
+      )
 
       {:reply, {:ok, amount}, new_state}
     else
